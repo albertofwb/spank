@@ -42,6 +42,14 @@ sudo spank --sexy
 3. When a significant impact is detected, plays an embedded MP3 response
 4. 500ms cooldown between responses to prevent rapid-fire
 
+## What people are saying
+
+> "this is the most amazing thing i've ever seen" — [@kenwheeler](https://x.com/kenwheeler)
+
+> "I just ran sexy mode with my wife sitting next to me...We died laughing" — [@duncanthedev](https://x.com/duncanthedev)
+
+> "peak engineering" — [@tylertaewook](https://x.com/tylertaewook)
+
 ## Credits
 
 Sensor reading and vibration detection ported from [olvvier/apple-silicon-accelerometer](https://github.com/olvvier/apple-silicon-accelerometer).
