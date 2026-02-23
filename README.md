@@ -16,7 +16,7 @@ Download from the [latest release](https://github.com/taigrr/spank/releases/late
 Or build from source:
 
 ```bash
-GOPRIVATE=github.com/taigrr/apple-silicon-accelerometer go install github.com/taigrr/spank@latest
+go install github.com/taigrr/spank@latest
 ```
 
 ## Usage
