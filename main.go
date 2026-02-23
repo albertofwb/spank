@@ -197,7 +197,7 @@ func newSlapTracker() *slapTracker {
 	}
 	sort.Strings(files)
 	return &slapTracker{
-		window:    time.Minute,
+		window:    5 * time.Minute,
 		sexyFiles: files,
 	}
 }

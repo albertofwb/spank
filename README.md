@@ -33,7 +33,7 @@ sudo spank --sexy
 
 **Pain mode** (default): Randomly plays from 10 pain/protest audio clips when a slap is detected.
 
-**Sexy mode** (`--sexy`): Tracks slaps within a rolling 1-minute window. The more you slap, the more intense the audio response. 60 levels of escalation.
+**Sexy mode** (`--sexy`): Tracks slaps within a rolling 5-minute window. The more you slap, the more intense the audio response. 60 levels of escalation.
 
 ## How it works
 
