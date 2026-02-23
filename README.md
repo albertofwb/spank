@@ -2,6 +2,12 @@
 
 Slap your MacBook, it yells back.
 
+> "this is the most amazing thing i've ever seen" — [@kenwheeler](https://x.com/kenwheeler)
+
+> "I just ran sexy mode with my wife sitting next to me...We died laughing" — [@duncanthedev](https://x.com/duncanthedev)
+
+> "peak engineering" — [@tylertaewook](https://x.com/tylertaewook)
+
 Uses the Apple Silicon accelerometer (Bosch BMI286 IMU via IOKit HID) to detect physical hits on your laptop and plays audio responses. Single binary, no dependencies.
 
 ## Requirements
@@ -41,14 +47,6 @@ sudo spank --sexy
 2. Runs vibration detection (STA/LTA, CUSUM, kurtosis, peak/MAD)
 3. When a significant impact is detected, plays an embedded MP3 response
 4. 500ms cooldown between responses to prevent rapid-fire
-
-## What people are saying
-
-> "this is the most amazing thing i've ever seen" — [@kenwheeler](https://x.com/kenwheeler)
-
-> "I just ran sexy mode with my wife sitting next to me...We died laughing" — [@duncanthedev](https://x.com/duncanthedev)
-
-> "peak engineering" — [@tylertaewook](https://x.com/tylertaewook)
 
 ## Credits
 
