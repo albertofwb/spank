@@ -53,7 +53,7 @@ var sensorErr = make(chan error, 1)
 type playMode int
 
 const (
-	modeRandom     playMode = iota
+	modeRandom playMode = iota
 	modeEscalation
 )
 
@@ -240,6 +240,7 @@ func run(ctx context.Context) error {
 	speakerInit := false
 	det := detector.New()
 	var lastAccelTotal uint64
+	lastEventIdx := 0
 	lastYell := time.Time{}
 	cooldown := 500 * time.Millisecond
 	maxBatch := 200
@@ -268,21 +269,24 @@ func run(ctx context.Context) error {
 			samples = samples[len(samples)-maxBatch:]
 		}
 
-		prevEventCount := len(det.Events)
 		nSamples := len(samples)
 		for idx, s := range samples {
 			tSample := tNow - float64(nSamples-idx-1)/float64(det.FS)
 			det.Process(s.X, s.Y, s.Z, tSample)
 		}
 
-		if len(det.Events) > prevEventCount && time.Since(lastYell) > cooldown {
-			ev := det.Events[len(det.Events)-1]
-			if ev.Severity == "CHOC_MAJEUR" || ev.Severity == "CHOC_MOYEN" || ev.Severity == "MICRO_CHOC" {
-				lastYell = now
-				count := tracker.record(now)
-				file := tracker.getFile(count)
-				fmt.Printf("slap #%d [%s amp=%.5fg] -> %s\n", count, ev.Severity, ev.Amplitude, file)
-				go playEmbedded(pack.fs, file, &speakerInit)
+		newEventIdx := len(det.Events)
+		if newEventIdx != lastEventIdx {
+			ev := det.Events[newEventIdx-1]
+			lastEventIdx = newEventIdx
+			if time.Since(lastYell) > cooldown {
+				if ev.Severity == "CHOC_MAJEUR" || ev.Severity == "CHOC_MOYEN" || ev.Severity == "MICRO_CHOC" {
+					lastYell = now
+					count := tracker.record(now)
+					file := tracker.getFile(count)
+					fmt.Printf("slap #%d [%s amp=%.5fg] -> %s\n", count, ev.Severity, ev.Amplitude, file)
+					go playEmbedded(pack.fs, file, &speakerInit)
+				}
 			}
 		}
 	}
