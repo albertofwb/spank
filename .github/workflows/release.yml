@@ -18,19 +18,20 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      - name: Configure git for private deps
+        run: |
+          git config --global url."https://oauth2:${GH_PAT}@github.com/".insteadOf "https://github.com/"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26"
 
-      - name: Configure private deps
-        run: |
-          git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-
       - name: Build macOS binary
         env:
           GOPRIVATE: github.com/taigrr/apple-silicon-accelerometer
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o spank-darwin-arm64 .
           tar czf spank-darwin-arm64.tar.gz spank-darwin-arm64 audio/
