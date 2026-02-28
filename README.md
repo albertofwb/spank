@@ -1,5 +1,7 @@
 # spank
 
+[简体中文](README_CN.md) | English
+
 Slap your MacBook, it yells back.
 
 > "this is the most amazing thing i've ever seen" — [@kenwheeler](https://x.com/kenwheeler)
@@ -8,12 +10,18 @@ Slap your MacBook, it yells back.
 
 > "peak engineering" — [@tylertaewook](https://x.com/tylertaewook)
 
-Uses the Apple Silicon accelerometer (Bosch BMI286 IMU via IOKit HID) to detect physical hits on your laptop and plays audio responses. Single binary, no dependencies.
+Uses sensors to detect physical hits on your laptop and plays audio responses. Single binary, cross-platform.
 
 ## Requirements
 
+### macOS
 - macOS on Apple Silicon (M2+)
 - `sudo` (for IOKit HID accelerometer access)
+
+### Linux
+- Linux with PortAudio support
+- `libportaudio2-dev` and `portaudio19-dev` packages
+- Microphone (to detect slaps via audio)
 
 ## Install
 
@@ -25,7 +33,17 @@ Or build from source:
 go install github.com/taigrr/spank@latest
 ```
 
+Or clone and build with Make:
+
+```bash
+git clone https://github.com/taigrr/spank.git
+cd spank
+make build
+```
+
 ## Usage
+
+### macOS
 
 ```bash
 # Normal mode — says "ow!" when slapped
@@ -38,6 +56,32 @@ sudo spank --sexy
 sudo spank --halo
 ```
 
+### Linux
+
+```bash
+# Normal mode — says "ow!" when you make a loud sound
+spank
+
+# Sexy mode — escalating responses
+spank --sexy
+
+# Halo mode — Halo death sounds
+spank --halo
+
+# Adjust detection threshold (default: 2000, higher = less sensitive)
+spank --threshold 3000
+```
+
+> **Linux Note:** The microphone is used to detect loud sounds (like slapping the laptop). Make sure your microphone is not muted and has reasonable volume.
+>
+> **Threshold tuning:** If detection is too sensitive, increase `--threshold` (e.g., 3000-5000). If not sensitive enough, decrease it (e.g., 1000-1500).
+>
+> **Hide ALSA warnings:** PortAudio may output ALSA debug messages. Run with `2>/dev/null` to hide them:
+> ```bash
+> spank 2>/dev/null
+> spank --threshold 3000 2>/dev/null
+> ```
+
 ### Modes
 
 **Pain mode** (default): Randomly plays from 10 pain/protest audio clips when a slap is detected.
@@ -46,7 +90,35 @@ sudo spank --halo
 
 **Halo mode** (`--halo`): Randomly plays from death sound effects from the Halo video game series when a slap is detected.
 
-## Running as a Service
+## Building
+
+### Auto-detect platform
+
+```bash
+make build
+```
+
+### Cross-compile (from Linux)
+
+```bash
+make cross-compile
+```
+
+### Install to system
+
+```bash
+make install
+```
+
+### Run directly
+
+```bash
+make run          # Normal mode
+make run-sexy     # Sexy mode
+make run-halo     # Halo mode
+```
+
+## Running as a Service (macOS)
 
 To have spank start automatically at boot, create a launchd plist. Pick your mode:
 
@@ -163,14 +235,31 @@ sudo launchctl unload /Library/LaunchDaemons/com.taigrr.spank.plist
 
 ## How it works
 
-1. Reads raw accelerometer data directly via IOKit HID (Apple SPU sensor)
+### macOS
+1. Reads raw accelerometer data directly via IOKit HID (Apple SPU sensor - Bosch BMI286 IMU)
 2. Runs vibration detection (STA/LTA, CUSUM, kurtosis, peak/MAD)
 3. When a significant impact is detected, plays an embedded MP3 response
 4. 500ms cooldown between responses to prevent rapid-fire
 
+### Linux
+1. Captures audio from microphone using PortAudio (continuous stream)
+2. Analyzes audio amplitude in real-time to detect loud sounds (slaps)
+3. When a sound exceeds the threshold, plays an embedded MP3 response
+4. 500ms cooldown between responses
+
+## Platform Differences
+
+| Feature | macOS | Linux |
+|---------|-------|-------|
+| Sensor | Accelerometer (IOKit HID) | Microphone (ALSA) |
+| Requires sudo | Yes (IOKit access) | No |
+| Hardware | Apple Silicon M2+ | Any with microphone |
+| Trigger | Physical impact | Loud sound |
+
 ## Credits
 
-Sensor reading and vibration detection ported from [olvvier/apple-silicon-accelerometer](https://github.com/olvvier/apple-silicon-accelerometer).
+- Sensor reading and vibration detection ported from [olvvier/apple-silicon-accelerometer](https://github.com/olvvier/apple-silicon-accelerometer)
+- Cross-platform adaptation with microphone support for Linux
 
 ## License
 

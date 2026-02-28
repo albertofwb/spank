@@ -5,6 +5,7 @@ go 1.26
 require (
 	github.com/charmbracelet/fang v0.4.4
 	github.com/gopxl/beep/v2 v2.1.1
+	github.com/gordonklaus/portaudio v0.0.0-20260203164431-765aa7dfa631
 	github.com/spf13/cobra v1.10.2
 	github.com/taigrr/apple-silicon-accelerometer v0.1.0
 )
