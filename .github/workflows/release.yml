@@ -38,7 +38,7 @@ jobs:
           name: linux-binary
           path: spank-linux-amd64.tar.gz
 
-  # Windows build (PortAudio microphone with static linking)
+  # Windows build (PortAudio with embedded DLL)
   release-windows:
     runs-on: windows-latest
     steps:
@@ -51,19 +51,17 @@ jobs:
         with:
           go-version: "1.26"
 
-      - name: Install PortAudio (static)
+      - name: Install PortAudio and copy DLL
         run: |
-          vcpkg install portaudio:x64-windows-static
+          vcpkg install portaudio:x64-windows
+          Copy-Item "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin\portaudio.dll" "portaudio.dll"
 
-      - name: Build Windows binary (static)
+      - name: Build Windows binary (with embedded DLL)
         shell: pwsh
         run: |
           $env:CGO_ENABLED = "1"
-          $env:PKG_CONFIG_PATH = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\lib\pkgconfig"
-          $env:CGO_CFLAGS = "-I$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include"
-          # Static link with required Windows system libraries
-          $env:CGO_LDFLAGS = "-L$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\lib -lportaudio -lwinmm -lsetupapi -lole32 -luuid"
-          go build -ldflags "-s -w -extldflags '-static'" -o spank-windows-amd64.exe .
+          $env:PKG_CONFIG_PATH = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\lib\pkgconfig"
+          go build -ldflags "-s -w" -o spank-windows-amd64.exe .
           Compress-Archive -Path "spank-windows-amd64.exe","audio" -DestinationPath "spank-windows-amd64.zip"
 
       - name: Upload Windows artifact
@@ -118,7 +116,7 @@ jobs:
             ### Windows (PortAudio + Microphone)
             - **File:** `spank-windows-amd64.zip`
             - **Requirements:** Windows 10/11 with microphone
-            - **No DLL required** - statically linked, just run the exe!
+            - **Self-contained** - PortAudio DLL embedded, just run the exe!
             - **Usage:**
               ```powershell
               spank.exe                    # Pain mode (default)
