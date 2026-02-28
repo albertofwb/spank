@@ -9,39 +9,6 @@ permissions:
   contents: write
 
 jobs:
-  # macOS build (Apple Silicon accelerometer)
-  release-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
-
-      - name: Configure git for private deps
-        run: |
-          git config --global url."https://oauth2:${GH_PAT}@github.com/".insteadOf "https://github.com/"
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.26"
-
-      - name: Build macOS binary
-        env:
-          GOPRIVATE: github.com/taigrr/apple-silicon-accelerometer
-          GH_PAT: ${{ secrets.GH_PAT }}
-        run: |
-          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o spank-darwin-arm64 .
-          tar czf spank-darwin-arm64.tar.gz spank-darwin-arm64 audio/
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-binary
-          path: spank-darwin-arm64.tar.gz
-
   # Linux build (PortAudio microphone)
   release-linux:
     runs-on: ubuntu-latest
@@ -71,46 +38,49 @@ jobs:
           name: linux-binary
           path: spank-linux-amd64.tar.gz
 
-  # Create release with both binaries
+  # Create release with Linux binary
   create-release:
-    needs: [release-macos, release-linux]
+    needs: [release-linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Download all artifacts
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
+          name: linux-binary
           path: artifacts
-          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/spank-darwin-arm64.tar.gz
             artifacts/spank-linux-amd64.tar.gz
           generate_release_notes: true
           body: |
-            ## Cross-Platform Slap Detector
+            ## Linux Slap Detector
 
-            ### macOS (Apple Silicon)
-            - **File:** `spank-darwin-arm64.tar.gz`
-            - **Requirements:** macOS on Apple Silicon (M2+), `sudo` for IOKit HID access
-            - **Usage:** `sudo ./spank`
-
-            ### Linux
+            ### Linux (PortAudio + Microphone)
             - **File:** `spank-linux-amd64.tar.gz`
             - **Requirements:** Linux with PortAudio, microphone
             - **Install deps:** `sudo apt install libportaudio2 portaudio19-dev`
-            - **Usage:** `./spank` or `./spank --threshold 3000`
+            - **Usage:**
+              ```bash
+              ./spank                    # Pain mode (default)
+              ./spank --sexy             # Sexy mode
+              ./spank --halo             # Halo mode
+              ./spank --threshold 3000   # Adjust sensitivity
+              ```
 
             ### Modes
-            - `sudo ./spank` - Pain mode (default)
-            - `sudo ./spank --sexy` - Sexy mode
-            - `sudo ./spank --halo` - Halo mode
+            - `Pain mode` - Random pain sounds
+            - `Sexy mode` - Escalating responses
+            - `Halo mode` - Halo death sounds
+
+            ### Note
+            macOS build requires private repository access. For macOS support, build from source on an Apple Silicon Mac.
 
             [中文说明](README_CN.md)
         env:
