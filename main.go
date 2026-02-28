@@ -5,8 +5,9 @@
 // Cross-platform support:
 //   - macOS: Uses Apple Silicon accelerometer (IOKit HID)
 //   - Linux: Uses microphone to detect loud sounds (slaps)
-//go:build darwin || linux
-// +build darwin linux
+//   - Windows: Uses microphone to detect loud sounds (slaps)
+//go:build darwin || linux || windows
+// +build darwin linux windows
 
 package main
 
