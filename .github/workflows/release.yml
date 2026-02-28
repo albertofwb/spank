@@ -38,19 +38,56 @@ jobs:
           name: linux-binary
           path: spank-linux-amd64.tar.gz
 
-  # Create release with Linux binary
+  # Windows build (PortAudio microphone with dynamic linking)
+  release-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Install PortAudio
+        run: |
+          vcpkg install portaudio:x64-windows
+
+      - name: Build Windows binary
+        shell: pwsh
+        run: |
+          $env:CGO_ENABLED = "1"
+          $env:PKG_CONFIG_PATH = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\lib\pkgconfig"
+          go build -ldflags "-s -w" -o spank-windows-amd64.exe .
+          Compress-Archive -Path "spank-windows-amd64.exe","audio" -DestinationPath "spank-windows-amd64.zip"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binary
+          path: spank-windows-amd64.zip
+
+  # Create release with both binaries
   create-release:
-    needs: [release-linux]
+    needs: [release-linux, release-windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Download artifact
+      - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
           name: linux-binary
+          path: artifacts
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-binary
           path: artifacts
 
       - name: Create Release
@@ -58,6 +95,7 @@ jobs:
         with:
           files: |
             artifacts/spank-linux-amd64.tar.gz
+            artifacts/spank-windows-amd64.zip
           generate_release_notes: true
           body: |
             ## Cross-Platform Slap Detector
@@ -74,16 +112,17 @@ jobs:
               ./spank --threshold 3000   # Adjust sensitivity
               ```
 
-            ### Windows
-            Windows build requires local compilation with PortAudio. Build from source:
-            ```powershell
-            # Install PortAudio (via vcpkg or download prebuilt)
-            vcpkg install portaudio:x64-windows
-
-            # Build
-            $env:CGO_ENABLED=1
-            go build -o spank.exe .
-            ```
+            ### Windows (PortAudio + Microphone)
+            - **File:** `spank-windows-amd64.zip`
+            - **Requirements:** Windows 10/11 with microphone
+            - **Note:** May need PortAudio DLL (`portaudio.dll`) in same directory or system PATH
+            - **Usage:**
+              ```powershell
+              spank.exe                    # Pain mode (default)
+              spank.exe --sexy             # Sexy mode
+              spank.exe --halo             # Halo mode
+              spank.exe --threshold 3000   # Adjust sensitivity
+              ```
 
             ### macOS
             macOS build requires private repository access. Build from source on Apple Silicon Mac.
