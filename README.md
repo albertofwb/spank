@@ -25,7 +25,7 @@ Uses sensors to detect physical hits on your laptop and plays audio responses. S
 
 ## Install
 
-Download from the [latest release](https://github.com/taigrr/spank/releases/latest).
+Download from the [latest release](https://github.com/albertofwb/spank/releases/latest).
 
 Or build from source:
 
@@ -36,7 +36,7 @@ go install github.com/taigrr/spank@latest
 Or clone and build with Make:
 
 ```bash
-git clone https://github.com/taigrr/spank.git
+git clone https://github.com/albertofwb/spank.git
 cd spank
 make build
 ```

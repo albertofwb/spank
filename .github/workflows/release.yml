@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  # macOS build (Apple Silicon accelerometer)
+  release-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Configure private deps
+        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Build macOS binary
+        run: |
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o spank-darwin-arm64 .
+          tar czf spank-darwin-arm64.tar.gz spank-darwin-arm64 audio/
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-binary
+          path: spank-darwin-arm64.tar.gz
+
+  # Linux build (PortAudio microphone)
+  release-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Install PortAudio dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libportaudio2-dev portaudio19-dev
+
+      - name: Build Linux binary
+        run: |
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o spank-linux-amd64 .
+          tar czf spank-linux-amd64.tar.gz spank-linux-amd64 audio/
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binary
+          path: spank-linux-amd64.tar.gz
+
+  # Create release with both binaries
+  create-release:
+    needs: [release-macos, release-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/spank-darwin-arm64.tar.gz
+            artifacts/spank-linux-amd64.tar.gz
+          generate_release_notes: true
+          body: |
+            ## Cross-Platform Slap Detector
+
+            ### macOS (Apple Silicon)
+            - **File:** `spank-darwin-arm64.tar.gz`
+            - **Requirements:** macOS on Apple Silicon (M2+), `sudo` for IOKit HID access
+            - **Usage:** `sudo ./spank`
+
+            ### Linux
+            - **File:** `spank-linux-amd64.tar.gz`
+            - **Requirements:** Linux with PortAudio, microphone
+            - **Install deps:** `sudo apt install libportaudio2 portaudio19-dev`
+            - **Usage:** `./spank` or `./spank --threshold 3000`
+
+            ### Modes
+            - `sudo ./spank` - Pain mode (default)
+            - `sudo ./spank --sexy` - Sexy mode
+            - `sudo ./spank --halo` - Halo mode
+
+            [中文说明](README_CN.md)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

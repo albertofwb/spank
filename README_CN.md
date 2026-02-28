@@ -25,18 +25,18 @@
 
 ## 安装
 
-从 [最新发布](https://github.com/taigrr/spank/releases/latest) 下载。
+从 [最新发布](https://github.com/albertofwb/spank/releases/latest) 下载。
 
 或者从源码构建：
 
 ```bash
-go install github.com/taigrr/spank@latest
+go install github.com/albertofwb/spank@latest
 ```
 
 或者克隆并使用 Make 构建：
 
 ```bash
-git clone https://github.com/taigrr/spank.git
+git clone https://github.com/albertofwb/spank.git
 cd spank
 make build
 ```

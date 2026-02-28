@@ -221,7 +221,6 @@ func run(ctx context.Context) error {
 	defer sensor.Close()
 
 	tracker := newSlapTracker(pack)
-	speakerInit := false
 	lastYell := time.Time{}
 	cooldown := 500 * time.Millisecond
 
@@ -252,15 +251,46 @@ func run(ctx context.Context) error {
 				count := tracker.record(now)
 				file := tracker.getFile(count)
 				fmt.Printf("slap #%d [%s amp=%.5fg] -> %s\n", count, severity, amplitude, file)
-				go playEmbedded(pack.fs, file, &speakerInit)
+				queueAudio(pack.fs, file)
 			}
 		}
 	}
 }
 
 var speakerMu sync.Mutex
+var currentSampleRate beep.SampleRate
 
-func playEmbedded(fs embed.FS, path string, speakerInit *bool) {
+// audioQueue is a channel for queuing audio files to be played sequentially
+var audioQueue = make(chan queuedAudio, 10)
+
+type queuedAudio struct {
+	fs   embed.FS
+	path string
+}
+
+// audioPlayerStarted tracks if the background audio player goroutine is running
+var audioPlayerStarted bool
+
+func startAudioPlayer() {
+	speakerMu.Lock()
+	defer speakerMu.Unlock()
+	if audioPlayerStarted {
+		return
+	}
+	audioPlayerStarted = true
+
+	// Initialize speaker with a default sample rate (will be reinitialized on first play if needed)
+	defaultRate := beep.SampleRate(48000)
+	speaker.Init(defaultRate, defaultRate.N(time.Second/10))
+
+	go func() {
+		for qa := range audioQueue {
+			playAudioSync(qa.fs, qa.path)
+		}
+	}()
+}
+
+func playAudioSync(fs embed.FS, path string) {
 	data, err := fs.ReadFile(path)
 	if err != nil {
 		return
@@ -273,9 +303,10 @@ func playEmbedded(fs embed.FS, path string, speakerInit *bool) {
 	defer streamer.Close()
 
 	speakerMu.Lock()
-	if !*speakerInit {
-		speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
-		*speakerInit = true
+	if currentSampleRate != format.SampleRate {
+		currentSampleRate = format.SampleRate
+		speaker.Clear()
+		speaker.Init(currentSampleRate, currentSampleRate.N(time.Second/10))
 	}
 	speakerMu.Unlock()
 
@@ -284,4 +315,9 @@ func playEmbedded(fs embed.FS, path string, speakerInit *bool) {
 		done <- true
 	})))
 	<-done
+}
+
+func queueAudio(fs embed.FS, path string) {
+	startAudioPlayer()
+	audioQueue <- queuedAudio{fs: fs, path: path}
 }
