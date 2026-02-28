@@ -46,6 +46,121 @@ sudo spank --halo
 
 **Halo mode** (`--halo`): Randomly plays from death sound effects from the Halo video game series when a slap is detected.
 
+## Running as a Service
+
+To have spank start automatically at boot, create a launchd plist. Pick your mode:
+
+<details>
+<summary>Pain mode (default)</summary>
+
+```bash
+sudo tee /Library/LaunchDaemons/com.taigrr.spank.plist > /dev/null << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.taigrr.spank</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/spank</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/spank.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/spank.err</string>
+</dict>
+</plist>
+EOF
+```
+
+</details>
+
+<details>
+<summary>Sexy mode</summary>
+
+```bash
+sudo tee /Library/LaunchDaemons/com.taigrr.spank.plist > /dev/null << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.taigrr.spank</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/spank</string>
+        <string>--sexy</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/spank.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/spank.err</string>
+</dict>
+</plist>
+EOF
+```
+
+</details>
+
+<details>
+<summary>Halo mode</summary>
+
+```bash
+sudo tee /Library/LaunchDaemons/com.taigrr.spank.plist > /dev/null << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.taigrr.spank</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/spank</string>
+        <string>--halo</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/spank.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/spank.err</string>
+</dict>
+</plist>
+EOF
+```
+
+</details>
+
+> **Note:** Update the path to `spank` if you installed it elsewhere (e.g. `~/go/bin/spank`).
+
+Load and start the service:
+
+```bash
+sudo launchctl load /Library/LaunchDaemons/com.taigrr.spank.plist
+```
+
+Since the plist lives in `/Library/LaunchDaemons` and no `UserName` key is set, launchd runs it as root — no `sudo` needed.
+
+To stop or unload:
+
+```bash
+sudo launchctl unload /Library/LaunchDaemons/com.taigrr.spank.plist
+```
+
 ## How it works
 
 1. Reads raw accelerometer data directly via IOKit HID (Apple SPU sensor)
