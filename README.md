@@ -23,6 +23,11 @@ Uses sensors to detect physical hits on your laptop and plays audio responses. S
 - `libportaudio2-dev` and `portaudio19-dev` packages
 - Microphone (to detect slaps via audio)
 
+### Windows
+- Windows 10/11
+- Microphone (to detect slaps via audio)
+- No additional dependencies required
+
 ## Install
 
 Download from the [latest release](https://github.com/albertofwb/spank/releases/latest).
@@ -73,6 +78,30 @@ spank --threshold 3000
 ```
 
 > **Linux Note:** The microphone is used to detect loud sounds (like slapping the laptop). Make sure your microphone is not muted and has reasonable volume.
+>
+> **Hide ALSA warnings:** PortAudio may output ALSA debug messages. Run with `2>/dev/null` to hide them:
+> ```bash
+> spank 2>/dev/null
+> spank --threshold 3000 2>/dev/null
+> ```
+
+### Windows
+
+```powershell
+# Normal mode — says "ow!" when you make a loud sound
+spank.exe
+
+# Sexy mode — escalating responses
+spank.exe --sexy
+
+# Halo mode — Halo death sounds
+spank.exe --halo
+
+# Adjust detection threshold (default: 2000, higher = less sensitive)
+spank.exe --threshold 3000
+```
+
+> **Windows Note:** The microphone is used to detect loud sounds. Make sure your microphone is enabled in Windows Privacy settings.
 >
 > **Threshold tuning:** If detection is too sensitive, increase `--threshold` (e.g., 3000-5000). If not sensitive enough, decrease it (e.g., 1000-1500).
 >
@@ -249,12 +278,12 @@ sudo launchctl unload /Library/LaunchDaemons/com.taigrr.spank.plist
 
 ## Platform Differences
 
-| Feature | macOS | Linux |
-|---------|-------|-------|
-| Sensor | Accelerometer (IOKit HID) | Microphone (ALSA) |
-| Requires sudo | Yes (IOKit access) | No |
-| Hardware | Apple Silicon M2+ | Any with microphone |
-| Trigger | Physical impact | Loud sound |
+| Feature | macOS | Linux | Windows |
+|---------|-------|-------|---------|
+| Sensor | Accelerometer (IOKit HID) | Microphone (PortAudio) | Microphone (PortAudio) |
+| Requires sudo | Yes (IOKit access) | No | No |
+| Hardware | Apple Silicon M2+ | Any with microphone | Any with microphone |
+| Trigger | Physical impact | Loud sound | Loud sound |
 
 ## Credits
 

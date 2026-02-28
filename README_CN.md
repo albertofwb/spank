@@ -23,6 +23,11 @@
 - `libportaudio2-dev` 和 `portaudio19-dev` 包
 - 麦克风（用于通过音频检测拍打）
 
+### Windows
+- Windows 10/11
+- 麦克风（用于通过音频检测拍打）
+- 无需额外依赖
+
 ## 安装
 
 从 [最新发布](https://github.com/albertofwb/spank/releases/latest) 下载。
@@ -71,6 +76,24 @@ spank --halo
 # 调整检测阈值（默认：2000，越高越不敏感）
 spank --threshold 3000
 ```
+
+### Windows
+
+```powershell
+# 普通模式 — 检测到大声时喊 "ow!"
+spank.exe
+
+# Sexy 模式 — 递进回应
+spank.exe --sexy
+
+# Halo 模式 — Halo 死亡音效
+spank.exe --halo
+
+# 调整检测阈值（默认：2000，越高越不敏感）
+spank.exe --threshold 3000
+```
+
+> **Windows 注意：** 程序使用麦克风检测大声响。确保在 Windows 隐私设置中允许应用访问麦克风。
 
 > **Linux 注意：** 程序使用麦克风检测大声响（比如拍打笔记本）。确保麦克风未静音且音量合适。
 >
@@ -249,12 +272,12 @@ sudo launchctl unload /Library/LaunchDaemons/com.taigrr.spank.plist
 
 ## 平台差异
 
-| 特性 | macOS | Linux |
-|---------|-------|-------|
-| 传感器 | 加速度计 (IOKit HID) | 麦克风 (PortAudio) |
-| 需要 sudo | 是 (IOKit 访问) | 否 |
-| 硬件 | Apple Silicon M2+ | 任何带麦克风的设备 |
-| 触发方式 | 物理撞击 | 大声响 |
+| 特性 | macOS | Linux | Windows |
+|---------|-------|-------|---------|
+| 传感器 | 加速度计 (IOKit HID) | 麦克风 (PortAudio) | 麦克风 (PortAudio) |
+| 需要 sudo | 是 (IOKit 访问) | 否 | 否 |
+| 硬件 | Apple Silicon M2+ | 任何带麦克风的设备 | 任何带麦克风的设备 |
+| 触发方式 | 物理撞击 | 大声响 | 大声响 |
 
 ## 致谢
 
