@@ -222,7 +222,7 @@ func run(ctx context.Context) error {
 
 	tracker := newSlapTracker(pack)
 	lastYell := time.Time{}
-	cooldown := 500 * time.Millisecond
+	cooldown := 1500 * time.Millisecond  // Increased to avoid multiple triggers for single slap
 
 	fmt.Printf("spank: listening for slaps in %s mode... (ctrl+c to quit)\n", pack.name)
 
@@ -263,6 +263,9 @@ var currentSampleRate beep.SampleRate
 // audioQueue is a channel for queuing audio files to be played sequentially
 var audioQueue = make(chan queuedAudio, 10)
 
+// audioQueueCount tracks number of audio files queued or playing
+var audioQueueCount int
+
 type queuedAudio struct {
 	fs   embed.FS
 	path string
@@ -293,11 +296,17 @@ func startAudioPlayer() {
 func playAudioSync(fs embed.FS, path string) {
 	data, err := fs.ReadFile(path)
 	if err != nil {
+		speakerMu.Lock()
+		audioQueueCount--
+		speakerMu.Unlock()
 		return
 	}
 
 	streamer, format, err := mp3.Decode(io.NopCloser(bytes.NewReader(data)))
 	if err != nil {
+		speakerMu.Lock()
+		audioQueueCount--
+		speakerMu.Unlock()
 		return
 	}
 	defer streamer.Close()
@@ -315,9 +324,23 @@ func playAudioSync(fs embed.FS, path string) {
 		done <- true
 	})))
 	<-done
+
+	speakerMu.Lock()
+	audioQueueCount--
+	speakerMu.Unlock()
 }
 
 func queueAudio(fs embed.FS, path string) {
 	startAudioPlayer()
+	speakerMu.Lock()
+	audioQueueCount++
+	speakerMu.Unlock()
 	audioQueue <- queuedAudio{fs: fs, path: path}
+}
+
+// isAudioPlaying returns true if there are audio files queued or playing
+func isAudioPlaying() bool {
+	speakerMu.Lock()
+	defer speakerMu.Unlock()
+	return audioQueueCount > 0
 }

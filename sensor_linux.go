@@ -23,11 +23,13 @@ func init() {
 
 // linuxSensor uses microphone input to detect "slaps" (loud sounds)
 type linuxSensor struct {
-	threshold  int
-	cooldown   time.Duration
-	lastEvent  time.Time
-	stream     *portaudio.Stream
-	buffer     []int16
+	threshold      int
+	cooldown       time.Duration
+	lastEvent      time.Time
+	stream         *portaudio.Stream
+	buffer         []int16
+	eventActive    bool       // true when sound is currently above threshold (event in progress)
+	eventEndTime   time.Time  // when the current event ended (for debounce)
 }
 
 // newLinuxSensor creates a Linux sensor with configurable threshold
@@ -49,9 +51,10 @@ func newLinuxSensor(threshold int) (platformSensor, error) {
 	}
 
 	sensor := &linuxSensor{
-		threshold: thr,
-		cooldown:  500 * time.Millisecond,
-		buffer:    make([]int16, framesPerBuffer),
+		threshold:    thr,
+		cooldown:     500 * time.Millisecond, // Cooldown after event ends
+		buffer:       make([]int16, framesPerBuffer),
+		eventEndTime: time.Now().Add(-time.Hour), // Initialize to past time so first detection works
 	}
 
 	// Open default input stream
@@ -80,8 +83,26 @@ func newLinuxSensor(threshold int) (platformSensor, error) {
 }
 
 func (s *linuxSensor) Read() (eventDetected bool, severity string, amplitude float64, err error) {
-	// Check cooldown
-	if time.Since(s.lastEvent) < s.cooldown {
+	// Skip detection if we're currently playing audio (avoid self-triggering)
+	if isAudioPlaying() {
+		// Still read from stream to keep buffer fresh, but ignore the data
+		if err := s.stream.Read(); err != nil {
+			return false, "", 0, fmt.Errorf("audio read error: %w", err)
+		}
+		// If we were in an event, mark it as ended
+		if s.eventActive {
+			s.eventActive = false
+			s.eventEndTime = time.Now()
+		}
+		return false, "MUTED", 0, nil
+	}
+
+	// Check cooldown (time since last event ended)
+	if time.Since(s.eventEndTime) < s.cooldown {
+		// Still need to read to keep buffer fresh
+		if err := s.stream.Read(); err != nil {
+			return false, "", 0, fmt.Errorf("audio read error: %w", err)
+		}
 		return false, "", 0, nil
 	}
 
@@ -92,9 +113,17 @@ func (s *linuxSensor) Read() (eventDetected bool, severity string, amplitude flo
 
 	// Calculate peak amplitude
 	peakAmp := s.calculatePeakAmplitude()
+	now := time.Now()
 
 	if peakAmp > s.threshold {
-		s.lastEvent = time.Now()
+		// Sound is above threshold
+		if s.eventActive {
+			// Event already in progress, don't trigger again
+			return false, "", 0, nil
+		}
+		// New event started
+		s.eventActive = true
+		s.lastEvent = now
 		// Normalize amplitude to a scale similar to accelerometer g-force
 		amp := float64(peakAmp) / 32768.0 * 3.0
 
@@ -107,6 +136,13 @@ func (s *linuxSensor) Read() (eventDetected bool, severity string, amplitude flo
 		}
 
 		return true, sev, amp, nil
+	}
+
+	// Sound is below threshold
+	if s.eventActive {
+		// Event just ended
+		s.eventActive = false
+		s.eventEndTime = now
 	}
 
 	return false, "", 0, nil
