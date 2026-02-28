@@ -14,31 +14,35 @@ import (
 var portaudioDLL []byte
 
 func init() {
-	// Extract DLL to temp directory on startup
+	// Extract DLL to exe directory on startup (before PortAudio initializes)
 	if err := extractDLL(); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to extract portaudio.dll: %v\n", err)
 	}
 	newPlatformSensor = newWindowsSensor
 }
 
-// extractDLL extracts the embedded portaudio.dll to a temp directory
-// and adds that directory to PATH so Windows can find it
+// extractDLL extracts the embedded portaudio.dll to the same directory as the exe
+// This ensures Windows can find it when loading PortAudio
 func extractDLL() error {
-	// Create temp directory for DLL
-	tempDir := filepath.Join(os.TempDir(), "spank")
-	if err := os.MkdirAll(tempDir, 0755); err != nil {
-		return fmt.Errorf("create temp dir: %w", err)
+	// Get the directory of the current executable
+	exePath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("get executable path: %w", err)
+	}
+	exeDir := filepath.Dir(exePath)
+
+	// Write DLL to the same directory as the executable
+	dllPath := filepath.Join(exeDir, "portaudio.dll")
+
+	// Check if DLL already exists with same size (avoid rewriting)
+	if info, err := os.Stat(dllPath); err == nil && info.Size() == int64(len(portaudioDLL)) {
+		// DLL already exists with correct size, skip extraction
+		return nil
 	}
 
-	// Write DLL if not exists or update it
-	dllPath := filepath.Join(tempDir, "portaudio.dll")
 	if err := os.WriteFile(dllPath, portaudioDLL, 0644); err != nil {
-		return fmt.Errorf("write dll: %w", err)
+		return fmt.Errorf("write dll to %s: %w", dllPath, err)
 	}
-
-	// Add temp directory to PATH so Windows can find the DLL
-	currentPath := os.Getenv("PATH")
-	os.Setenv("PATH", tempDir+";"+currentPath)
 
 	return nil
 }
